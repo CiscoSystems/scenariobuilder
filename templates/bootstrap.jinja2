@@ -1,0 +1,81 @@
+#!/bin/bash
+# Fix fqdn so puppet apply doesn't give us one on the wrong domain
+sed -i 's/\#supersede/supersede/g' /etc/dhcp/dhclient.conf;
+sed -i 's/fugue.com home.vix.com/{{domain}}/g' /etc/dhcp/dhclient.conf;
+sed -i 's/domain-name,//g' /etc/dhcp/dhclient.conf
+dhclient -r eth0 && dhclient eth0;
+
+ntpdate {{ initial_ntp }}
+usermod --password p1fhTXKKhbc0M root
+
+# Rstarmer's precise mirror
+# Different ubuntu images have different defaults
+sed -i 's/nova.clouds.archive.ubuntu.com/{{ apt_mirror_ip }}/g' /etc/apt/sources.list
+sed -i 's/archive.ubuntu.com/{{ apt_mirror_ip }}/g' /etc/apt/sources.list
+
+for i in 1 2 3
+do
+  ifconfig -a | grep eth$i
+  if [ $? -eq 0 ];
+    then
+      ifconfig eth$i up
+      dhclient eth$i -v
+  fi
+done
+
+#mount config drive
+mkdir -p /mnt/config
+mount /dev/disk/by-label/config-2 /mnt/config
+
+# Facter fqdn will come from DNS unless we do this
+echo "127.0.1.1 $(hostname).{{ domain }} $(hostname)" >> /etc/hosts
+apt-get update
+apt-get install -y puppet git rubygems curl python-yaml apache2 socat
+chmod a+r /var/log/cloud-init-output.log
+ln -s /var/log/cloud-init-output.log /var/www/cloud-init-output.log
+echo '#!/bin/bash' > /usr/bin/gitproxy
+echo '_proxy={{ apt_proxy_host }}'  >> /usr/bin/gitproxy
+echo '_proxyport={{ apt_proxy_port }}' >> /usr/bin/gitproxy
+echo 'exec socat STDIO PROXY:$_proxy:$1:$2,proxyport=$_proxyport' >> /usr/bin/gitproxy
+chmod a+x /usr/bin/gitproxy
+git config --system core.gitproxy gitproxy
+
+git clone https://github.com/{{ installer_repo }}/openstack-installer.git /root/openstack-installer
+cd /root/openstack-installer
+git checkout {{ installer_branch }}
+mkdir -p vendor
+export GEM_HOME=`pwd`/vendor
+gem install thor --no-ri --no-rdoc
+git clone https://github.com/bodepd/librarian-puppet-simple.git vendor/librarian-puppet-simple
+export PATH=`pwd`/vendor/librarian-puppet-simple/bin/:$PATH
+export git_protocol={{ git_protocol }}
+export openstack_version={{ openstack_version }}
+librarian-puppet install --verbose --path /etc/puppet/modules
+
+cd /etc/puppet/modules/{{ zuul_project }}
+{{ checkout_branch_command }}
+cd -
+
+cp -r /root/openstack-installer/data /etc/puppet
+cp -r /root/openstack-installer/manifests /etc/puppet
+# Set facts for facter from config.yaml
+python /root/openstack-installer/stack-builder/hiera_config.py
+
+# Can't set bash env vars from shild processes
+for i in `cat /root/fact_exports`; do export $i; done
+
+cp /root/config.yaml /etc/puppet/data
+cp /root/user.yaml   /etc/puppet/data/hiera_data
+cp /root/global.yaml /etc/puppet/data/global_hiera_params/user.yaml
+chmod a+r /etc/puppet/data/config.yaml
+chmod a+r /etc/puppet/data/hiera_data/user.yaml
+chmod a+r /etc/puppet/data/global_hiera_params/user.yaml
+# By default, setup.pp will omit some components
+# required by puppet master
+export FACTER_puppet_run_mode=master
+# Install the latest puppet and purge the old puppet
+puppet apply /root/openstack-installer/manifests/setup.pp --certname setup_cert
+# Install build server
+puppet apply /root/openstack-installer/manifests/site.pp
+
+puppet plugin download --server build-server.domain.name

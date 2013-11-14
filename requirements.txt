@@ -1,0 +1,4 @@
+python-novaclient
+python-neutronclient
+jinja2
+PyYaml
