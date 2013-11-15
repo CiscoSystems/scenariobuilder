@@ -4,6 +4,7 @@ from scenariobuilder.rebuild import rebuild
 from scenariobuilder.clean import kill
 from scenariobuilder.fragment import show as frag_show
 from scenariobuilder.metadata import show as meta_show
+from scenariobuilder.bootstrap import show as boot_show
 
 from novaclient.v1_1 import client as nclient
 from neutronclient.neutron import client as qclient
@@ -56,6 +57,12 @@ def main():
     parser_frag.add_argument('-y', '--yaml_dir', default='./data', help='name of image to use')
     parser_frag.add_argument('-s', '--scenario', default='2_role', help='Scenario to use')
     parser_frag.set_defaults(func=frag_show)
+
+    parser_boot = subparsers.add_parser('boot', help='Print bootstrap script that will be generated for a given node')
+    parser_boot.add_argument('node', help='node to build a bootstrap script for')
+    parser_boot.add_argument('-y', '--yaml_dir', default='./data', help='name of image to use')
+    parser_boot.add_argument('-s', '--scenario', default='2_role', help='Scenario to use')
+    parser_boot.set_defaults(func=boot_show)
 
     parser_log = subparsers.add_parser('log', help='Get logs from test nodes')
     parser_log.add_argument('-t', '--test_id', default=None, help='id of the test to get logs from')

@@ -3,9 +3,9 @@ import string
 import yaml
 from jinja2 import Environment, PackageLoader
 
-env = Environment(loader=PackageLoader('stack-builder', 'templates'))
+env = Environment(loader=PackageLoader('scenariobuilder', 'templates'))
 
-from metadata import build_metadata
+from scenariobuilder.metadata import build_metadata
 
 # Load in roles and node list
 # Do substitutions based on roles.
@@ -47,18 +47,17 @@ control-server:
 
 
 
-def compose(hostname, yaml_dir, fragment_dir, scenario, replacements):
+def compose(hostname, yaml_dir, scenario, replacements):
     template = env.get_template('bootstrap.jinja2')
 
-    fragments = load_yaml_config(hostname, yaml_dir, fragment_dir, scenario)
-    script = build_deploy(fragment_dir, fragments, replacements)
+    #fragments = load_yaml_config(hostname, yaml_dir, fragment_dir, scenario)
+    #script = build_deploy(fragment_dir, fragments, replacements)
 
-    return  template.render(replacements)
+    return template.render(replacements)
 
 def show(n, q, k, args):
     hostname = args.node
     yaml_dir = args.yaml_dir
-    fragment_dir = args.fragment_dir
     scenario = args.scenario
 
-    print compose(hostname, yaml_dir, fragment_dir, scenario, build_metadata('./data', '2_role', 'config'))
+    print compose(hostname, yaml_dir, scenario, build_metadata('./data', '2_role', 'config'))

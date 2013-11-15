@@ -1,2 +1,2 @@
 include *.txt
-graft templates
+recursive-include scenariobuilder/templates *
