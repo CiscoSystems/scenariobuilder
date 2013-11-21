@@ -13,7 +13,6 @@ import subprocess
 import os
 import uuid
 import neutronclient
-import fragment
 import yaml
 import json
 import time
@@ -31,17 +30,9 @@ runcmd:
 output: {all: '| tee -a /var/log/cloud-init-output.log'}
 """
 
-def build_server_deploy():
-    with open ('./stack-builder/fragments/build-config.sh', 'r') as b:
-        return b.read()
-
 def build_server_hiera_config():
     with open('./stack-builder/hiera_config.py', 'r') as b:
         return b.read()
-
-def stack_server_deploy(build_node_ip):
-    with open ('./stack-builder/fragments/openstack-config.sh', 'r') as b:
-      return b.read().replace('%build_server_ip%', build_node_ip)
 
 def build_nic_net_list(networks):
     return [{'net-id': network['id'], 'port-id': '', 'v4-fixed-ip': ''} for network in networks]
@@ -214,7 +205,6 @@ def make(n, q, k, args):
     ci_subnet_index = 123 # TODO fix inital setup stuff
     scenario        = args.scenario
     data_path       = args.data_path
-    fragment_path   = args.fragment_path
     public_network  = args.public_network
     nameserver      = args.nameserver
 

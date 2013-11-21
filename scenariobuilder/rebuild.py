@@ -10,7 +10,6 @@ import debug
 import subprocess
 import os
 import neutronclient
-import fragment
 import yaml
 import json
 import time
@@ -25,7 +24,6 @@ def rebuild(n,q,k,args):
     ci_subnet_index = 123 # TODO fix inital setup stuff
     scenario        = args.scenario
     data_path       = args.data_path
-    fragment_path   = args.fragment_path
     test_id         = args.test_id
 
     if args.debug:
@@ -95,7 +93,7 @@ def rebuild(n,q,k,args):
     # fragment composition
     deploy_files = {}
     for node, props in scenario_yaml['nodes'].items():
-        deploy_files[node] = fragment.compose(node, data_path, fragment_path, scenario, initial_config_meta)
+        deploy_files[node] = bootstrap.compose(node, data_path, scenario, initial_config_meta)
         dprint(node + 'deploy:\n' + deploy_files[node])
 
     user_config_yaml = yaml.dump(hiera_config_meta, default_flow_style=False)
