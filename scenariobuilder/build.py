@@ -7,6 +7,7 @@
     and pushing the appropriate metadata and init scripts to them
 
 """
+import bootstrap
 import debug
 import subprocess
 import os
@@ -299,11 +300,13 @@ def make(n, q, k, args):
     hiera_config_meta.update(meta_update)
     initial_config_meta.update(meta_update)
 
-    # fragment composition
+    # Bootstrap script composition
     deploy_files = {}
     for node, props in scenario_yaml['nodes'].items():
-        deploy_files[node] = fragment.compose(node, data_path, fragment_path, scenario, initial_config_meta)
+        deploy_files[node] = bootstrap.compose(node, data_path, scenario, initial_config_meta)
         dprint(node + 'deploy:\n' + deploy_files[node])
+
+    dprint("Deploy Files: " + str(deploy_files))
 
     user_config_yaml = yaml.dump(hiera_config_meta, default_flow_style=False)
     initial_config_yaml = yaml.dump(initial_config_meta, default_flow_style=False)
