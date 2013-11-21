@@ -8,10 +8,11 @@ dhclient -r eth0 && dhclient eth0;
 ntpdate {{ initial_ntp }}
 usermod --password p1fhTXKKhbc0M root
 
-# Rstarmer's precise mirror
 # Different ubuntu images have different defaults
+{% if apt_mirror_ip %}
 sed -i 's/nova.clouds.archive.ubuntu.com/{{ apt_mirror_ip }}/g' /etc/apt/sources.list
 sed -i 's/archive.ubuntu.com/{{ apt_mirror_ip }}/g' /etc/apt/sources.list
+{% endif %}
 
 for i in 1 2 3
 do
@@ -31,14 +32,18 @@ mount /dev/disk/by-label/config-2 /mnt/config
 echo "127.0.1.1 $(hostname).{{ domain }} $(hostname)" >> /etc/hosts
 apt-get update
 apt-get install -y puppet git rubygems curl python-yaml apache2 socat
+
 chmod a+r /var/log/cloud-init-output.log
 ln -s /var/log/cloud-init-output.log /var/www/cloud-init-output.log
+
+{% if apt_proxy_host %}
 echo '#!/bin/bash' > /usr/bin/gitproxy
 echo '_proxy={{ apt_proxy_host }}'  >> /usr/bin/gitproxy
 echo '_proxyport={{ apt_proxy_port }}' >> /usr/bin/gitproxy
 echo 'exec socat STDIO PROXY:$_proxy:$1:$2,proxyport=$_proxyport' >> /usr/bin/gitproxy
 chmod a+x /usr/bin/gitproxy
 git config --system core.gitproxy gitproxy
+{% endif %}
 
 git clone https://github.com/{{ installer_repo }}/openstack-installer.git /root/openstack-installer
 cd /root/openstack-installer
@@ -52,9 +57,11 @@ export git_protocol={{ git_protocol }}
 export openstack_version={{ openstack_version }}
 librarian-puppet install --verbose --path /etc/puppet/modules
 
+{% if zuul_project %}
 cd /etc/puppet/modules/{{ zuul_project }}
 {{ checkout_branch_command }}
 cd -
+{% endif %}
 
 cp -r /root/openstack-installer/data /etc/puppet
 cp -r /root/openstack-installer/manifests /etc/puppet
@@ -70,12 +77,33 @@ cp /root/global.yaml /etc/puppet/data/global_hiera_params/user.yaml
 chmod a+r /etc/puppet/data/config.yaml
 chmod a+r /etc/puppet/data/hiera_data/user.yaml
 chmod a+r /etc/puppet/data/global_hiera_params/user.yaml
-# By default, setup.pp will omit some components
-# required by puppet master
+
+{% if 'build' in class_groups %}
+# set a fact to indicate we are puppet master
 export FACTER_puppet_run_mode=master
+{% else %}
+export FACTER_puppet_run_mode=agent
+{% endif%}
+
 # Install the latest puppet and purge the old puppet
 puppet apply /root/openstack-installer/manifests/setup.pp --certname setup_cert
+
+{% if 'build' in class_groups %}
 # Install build server
 puppet apply /root/openstack-installer/manifests/site.pp
-
 puppet plugin download --server build-server.domain.name
+{% endif %}
+
+{% if wait_nodes %}
+    {% for node in wait_nodes %}
+until [ $(curl http://{{ node }}/deploy | grep complete) ]; do
+  echo "waited for {{ node }}" >> /root/waiting
+  sleep 1
+done
+
+    {% endfor %}
+{% endif %}
+
+{% if 'build' not in class_groups %}
+puppet agent -t --server build-server.domain.name
+{% endif %}
