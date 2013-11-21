@@ -61,8 +61,6 @@ def compose(hostname, yaml_dir, scenario, r):
     replacements['class_groups'] = class_groups
     replacements['hostname'] = hostname
 
-    print replacements
-
     return template.render(replacements)
 
 def show(n, q, k, args):
