@@ -30,10 +30,6 @@ runcmd:
 output: {all: '| tee -a /var/log/cloud-init-output.log'}
 """
 
-def build_server_hiera_config():
-    with open('./stack-builder/hiera_config.py', 'r') as b:
-        return b.read()
-
 def build_nic_net_list(networks):
     return [{'net-id': network['id'], 'port-id': '', 'v4-fixed-ip': ''} for network in networks]
 
