@@ -96,7 +96,7 @@ def make_subnet(q, ci_network_name, test_net, index=1, dhcp=True, gateway=False,
                                          'dns_nameservers': [unicode(dns_nameserver)]
 	                                 }})['subnet']
 
-        except quantumclient.common.exceptions.QuantumClientException:
+        except neutronclient.common.exceptions.NeutronClientException:
             print "Couldn't create subnet!"
     else:
        for net in subnets['subnets']:
@@ -244,7 +244,7 @@ def make(n, q, k, args):
                                         networks[network], index=ci_subnet_index, gateway=gate)
             ci_subnet_index = ci_subnet_index + 1
 
-    # There seems to be a bug in quantum where networks are not scheduled a dhcp agent unless a VM
+    # There seems to be a bug in neutron where networks are not scheduled a dhcp agent unless a VM
     # boots on that network without a pre-made port. So we boot an instance that will do this
     # on all our networks
     dummynets = [network for network in networks.values()]

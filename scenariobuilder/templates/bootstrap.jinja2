@@ -45,7 +45,7 @@ chmod a+x /usr/bin/gitproxy
 git config --system core.gitproxy gitproxy
 {% endif %}
 
-git clone https://github.com/{{ installer_repo }}/openstack-installer.git /root/openstack-installer
+git clone https://github.com/{{ installer_repo }}/puppet_openstack_builder.git /root/openstack-installer
 cd /root/openstack-installer
 git checkout {{ installer_branch }}
 mkdir -p vendor
