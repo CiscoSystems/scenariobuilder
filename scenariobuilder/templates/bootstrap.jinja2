@@ -45,8 +45,8 @@ chmod a+x /usr/bin/gitproxy
 git config --system core.gitproxy gitproxy
 {% endif %}
 
-git clone https://github.com/{{ installer_repo }}/puppet_openstack_builder.git /root/openstack-installer
-cd /root/openstack-installer
+git clone https://github.com/{{ installer_repo }}/puppet_openstack_builder.git /root/puppet_openstack_builder
+cd /root/puppet_openstack_builder
 git checkout {{ installer_branch }}
 mkdir -p vendor
 export GEM_HOME=`pwd`/vendor
@@ -63,10 +63,8 @@ cd /etc/puppet/modules/{{ zuul_project }}
 cd -
 {% endif %}
 
-cp -r /root/openstack-installer/data /etc/puppet
-cp -r /root/openstack-installer/manifests /etc/puppet
-# Set facts for facter from config.yaml
-python /root/openstack-installer/stack-builder/hiera_config.py
+cp -r /root/puppet_openstack_builder/data /etc/puppet
+cp -r /root/puppet_openstack_builder/manifests /etc/puppet
 
 # Can't set bash env vars from shild processes
 for i in `cat /root/fact_exports`; do export $i; done
@@ -86,11 +84,11 @@ export FACTER_puppet_run_mode=agent
 {% endif%}
 
 # Install the latest puppet and purge the old puppet
-puppet apply /root/openstack-installer/manifests/setup.pp --certname setup_cert
+puppet apply /root/puppet_openstack_builder/manifests/setup.pp --certname setup_cert
 
 {% if 'build' in class_groups %}
 # Install build server
-puppet apply /root/openstack-installer/manifests/site.pp
+puppet apply /root/puppet_openstack_builder/manifests/site.pp
 puppet plugin download --server build-server.domain.name
 {% endif %}
 
