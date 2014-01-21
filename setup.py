@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='scenariobuilder',
-    version='0.1.15',
+    version='0.1.16',
     packages=['scenariobuilder'],
     license='Apache',
     url='https://github.com/CiscoSystems/scenariobuilder',

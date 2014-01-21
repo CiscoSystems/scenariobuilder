@@ -4,12 +4,14 @@ from scenariobuilder.rebuild import rebuild
 from scenariobuilder.clean import kill
 from scenariobuilder.metadata import show as meta_show
 from scenariobuilder.bootstrap import show as boot_show
+from scenariobuilder.heated import heat as heat
 
 from novaclient.v1_1 import client as nclient
 from neutronclient.neutron import client as qclient
 
 import argparse
 import os
+import sys
 
 def main():
     user = os.environ.get('OS_USERNAME')
@@ -71,7 +73,16 @@ def main():
     parser_meta.add_argument('-c', '--config', default='config', help='Type of config to build - user or config')
     parser_meta.set_defaults(func=meta_show)
 
+    parser_heat = subparsers.add_parser('heat', help='create heat template for current scenario')
+    parser_heat.add_argument('-s', '--scenario', default='2_role', help='Scenario to run')
+    parser_heat.add_argument('-p', '--data_path', default='./data', help='Path to the data directory containing yaml config')
+    parser_heat.set_defaults(func=heat)
+
     args = parser.parse_args()
+
+    if args.func==heat:
+        heat(args)
+        sys.exit()
 
     k = ""
 
