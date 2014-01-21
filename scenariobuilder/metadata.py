@@ -35,7 +35,10 @@ def import_yaml(path, files):
                 y = yaml.load(f.read())
                 if y:
                     for key, value in y.items():
-                        metadata[key] = value
+                        if isinstance(value, bool):
+                            metadata[key] = str(value).lower()
+                        else:
+                            metadata[key] = str(value)
     return metadata
 
 def build_metadata(path, scenario, config):
